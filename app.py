@@ -2,7 +2,12 @@ import streamlit as st
 from openai import OpenAI
 
 # --- 1. 基础配置 (后续可替换打分逻辑) --- [cite: 7]
-client = OpenAI(api_key="sk-d45242bd41284ebbb6cc2163f34016b5", base_url="https://api.deepseek.com")
+api_key = st.secrets[
+"sk-d45242bd41284ebbb6cc2163f34016b5"
+]
+client = OpenAI(api_key=api_key, base_url=
+"https://api.deepseek.com"
+)
 
 # --- 2. 高级提示词预设 --- [cite: 6]
 SYSTEM_PROMPT = """你是一位温柔、有耐心的儿童哲学引导员。
