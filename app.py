@@ -3,7 +3,7 @@ from openai import OpenAI
 
 # --- 1. 基础配置 (后续可替换打分逻辑) --- [cite: 7]
 api_key = st.secrets[
-"sk-d45242bd41284ebbb6cc2163f34016b5"
+"DEEPSEEK_API_KEY"
 ]
 client = OpenAI(api_key=api_key, base_url=
 "https://api.deepseek.com"
