@@ -3,6 +3,9 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
+from streamlit_mic_recorder import mic_recorder
+import speech_recognition as sr
+import io
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
