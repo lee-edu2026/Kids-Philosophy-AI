@@ -58,7 +58,10 @@ prompt = st.chat_input("在这里输入你的想法...", accept_audio=True)
 
 # 处理用户的输入（无论是打字还是语音）
 if prompt:
-    user_message = prompt.get('text') if isinstance(prompt, dict) else prompt
+    try:
+    user_message = prompt.text
+    except AttributeError:
+    user_message = str(prompt)
 
     if user_message:
         # 将用户消息保存到会话历史并显示出来
