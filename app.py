@@ -4,8 +4,6 @@ import prompts
 import questions
 import evaluator
 from streamlit_chat_widget import chat_input_widget
-import speech_recognition as sr 
-import io
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
@@ -56,45 +54,19 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 4. 互动逻辑（修改为直接处理输入）---
-# 不再需要 st.chat_input，直接使用新的组件
+# --- 4. 互动逻辑 ---
 user_input = chat_input_widget()
 
-# 用于存储最终的用户消息
-final_user_message = None
-
-# 检查组件是否有返回内容（无论是打字还是语音）
 if user_input:
-    # 情况1：用户输入的是文字
-    if "text" in user_input:
-        final_user_message = user_input["text"]
+    # 无论是打字还是语音，组件都会返回包含 "text" 字段的字典
+    prompt = user_input.get("text", "").strip()
     
-    # 情况2：用户输入的是语音（这是本次修改的核心）
-    elif "audioFile" in user_input:
-        # 获取音频数据（bytes）
-        audio_bytes = bytes(user_input["audioFile"])
-        # 使用临时缓冲区处理音频数据
-        with io.BytesIO(audio_bytes) as audio_file:
-            # 加载音频数据
-            r = sr.Recognizer()
-            with sr.AudioFile(audio_file) as source:
-                audio_data = r.record(source)
-            # 调用 Google 免费语音识别，将音频转为中文文本
-            try:
-                final_user_message = r.recognize_google(audio_data, language="zh-CN")
-            except sr.UnknownValueError:
-                st.warning("抱歉，没能听清楚，可以再说一遍吗？")
-            except sr.RequestError:
-                st.warning("语音服务请求失败，请检查网络。")
-    
-    # 如果成功得到了用户消息（无论是打字还是语音），就发送给AI
-    if final_user_message:
-        # 将用户消息保存到聊天记录并显示
-        st.session_state.messages.append({"role": "user", "content": final_user_message})
+    if prompt:
+        st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
-            st.markdown(final_user_message)
+            st.markdown(prompt)
 
-        # 调用 DeepSeek API 获取回复
+        # 调用 AI 回复（你的原有代码）
         with st.chat_message("assistant"):
             response = client.chat.completions.create(
                 model="deepseek-chat",
