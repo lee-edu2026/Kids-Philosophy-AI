@@ -3,7 +3,7 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
-import extensions 
+import child_philosophy_extensions as extensions
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
@@ -87,4 +87,4 @@ if st.sidebar.button("生成哲学思维报告"):
                 report = evaluator.get_report(client, st.session_state.messages)
                 st.markdown(report)
 
-extensions.show_chat_export_ui()
+extensions.show_voice_input_for_chat()
