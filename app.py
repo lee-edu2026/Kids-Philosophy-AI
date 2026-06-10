@@ -4,6 +4,8 @@ import prompts
 import questions
 import evaluator
 from streamlit_chat_widget import chat_input_widget
+import speech_recognition as sr 
+import io
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
@@ -54,31 +56,46 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 4. 互动逻辑（修改后）---
-# 使用新的多功能聊天输入框组件
+# --- 4. 互动逻辑（修改为直接处理输入）---
+# 不再需要 st.chat_input，直接使用新的组件
 user_input = chat_input_widget()
 
-# 检查用户是通过文本还是语音发送的消息
+# 用于存储最终的用户消息
+final_user_message = None
+
+# 检查组件是否有返回内容（无论是打字还是语音）
 if user_input:
-    # 判断消息类型：如果是文本
+    # 情况1：用户输入的是文字
     if "text" in user_input:
-        prompt = user_input["text"]
-    # 如果是语音，则取出录音数据（可选，也可以只使用其文本转录）
+        final_user_message = user_input["text"]
+    
+    # 情况2：用户输入的是语音（这是本次修改的核心）
     elif "audioFile" in user_input:
-        # 你可以选择处理音频或忽略，这里简单取出文本供使用
-        # 注意：该组件返回的字典可能不直接包含转录的文本，我们可能暂不处理
-        # 为简单起见，后续可以只处理文本输入
-        pass
-
-    # 只有当我们拿到有效的文本 prompt 时才处理
-    if 'prompt' in locals() and prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        # 获取音频数据（bytes）
+        audio_bytes = bytes(user_input["audioFile"])
+        # 使用临时缓冲区处理音频数据
+        with io.BytesIO(audio_bytes) as audio_file:
+            # 加载音频数据
+            r = sr.Recognizer()
+            with sr.AudioFile(audio_file) as source:
+                audio_data = r.record(source)
+            # 调用 Google 免费语音识别，将音频转为中文文本
+            try:
+                final_user_message = r.recognize_google(audio_data, language="zh-CN")
+            except sr.UnknownValueError:
+                st.warning("抱歉，没能听清楚，可以再说一遍吗？")
+            except sr.RequestError:
+                st.warning("语音服务请求失败，请检查网络。")
+    
+    # 如果成功得到了用户消息（无论是打字还是语音），就发送给AI
+    if final_user_message:
+        # 将用户消息保存到聊天记录并显示
+        st.session_state.messages.append({"role": "user", "content": final_user_message})
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.markdown(final_user_message)
 
-        # ... （调用 AI 的代码保持不变） ...
+        # 调用 DeepSeek API 获取回复
         with st.chat_message("assistant"):
-            # 这里的 client 和 current_system_prompt 是在前面定义的
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
@@ -90,10 +107,7 @@ if user_input:
             answer = response.choices[0].message.content
             st.markdown(answer)
             st.session_state.messages.append({"role": "assistant", "content": answer})
-
-# 刷新 prompt 变量，避免下次循环错误地使用
-prompt = None
-
+            
 # --- 5. 评分报告 ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("第三步：结课评估")
