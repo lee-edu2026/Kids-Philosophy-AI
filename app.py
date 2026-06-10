@@ -55,17 +55,47 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- 4. 互动逻辑（语音+文本） ---
-# --- 语音输入部分（不再使用分栏）---
-user_input_from_mic = speech_to_text(
-    language='zh-CN',
-    start_prompt="🎙️ 录音",
-    stop_prompt="⏹️ 停止",
-    just_once=True,
-    use_container_width=True,
-    key="mic_recorder"
+# 添加固定底部样式，将语音按钮和聊天输入框包裹在一起
+st.markdown(
+    """
+    <style>
+    .fixed-bottom-input {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--secondary-background-color);
+        padding: 0.5rem 1rem 0.8rem 1rem;
+        z-index: 1000;
+        width: 100%;
+        border-top: 1px solid rgba(128, 128, 128, 0.2);
+    }
+    .stChatInput {
+        background-color: transparent !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
-user_input_from_text = st.chat_input("在这里输入你的想法...")
+# 用容器包裹语音按钮和文字输入框，并应用固定底部类
+with st.container():
+    st.markdown('<div class="fixed-bottom-input">', unsafe_allow_html=True)
+    
+    # 语音按钮（在上方）
+    user_input_from_mic = speech_to_text(
+        language='zh-CN',
+        start_prompt="🎙️ 录音",
+        stop_prompt="⏹️ 停止",
+        just_once=True,
+        use_container_width=True,
+        key="mic_recorder"
+    )
+    
+    # 文字输入框（在下方）
+    user_input_from_text = st.chat_input("在这里输入你的想法...")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # 统一处理输入（语音优先）
 if user_input_from_mic and user_input_from_mic.strip():
@@ -92,7 +122,10 @@ if user_message:
         answer = response.choices[0].message.content
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-            
+    
+    # 发送消息后强制滚动到底部，避免新消息被固定栏遮挡
+    st.rerun()
+
 # --- 5. 评分报告 ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("第三步：结课评估")
@@ -104,4 +137,3 @@ if st.sidebar.button("生成哲学思维报告"):
             with st.spinner("专家正在分析中..."):
                 report = evaluator.get_report(client, st.session_state.messages)
                 st.markdown(report)
-
