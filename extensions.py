@@ -18,7 +18,7 @@ def voice_toggle():
         btn.style.background = isListening ? "#ff4444" : "#f0f2f6";
     }
 
-    function setChatInputAndSend(text) {
+    function fillChatInput(text) {
         // 多种选择器尝试
         const selectors = [
             'div[data-testid="stChatInput"] textarea',
@@ -32,37 +32,13 @@ def voice_toggle():
             if (textarea) break;
         }
         
-        if (!textarea) {
-            // 增加重试：等待0.5秒后再查一次
-            setTimeout(() => {
-                for (let sel of selectors) {
-                    textarea = document.querySelector(sel);
-                    if (textarea) break;
-                }
-                if (textarea) {
-                    fillAndSend(textarea, text);
-                } else {
-                    alert("找不到聊天输入框，请刷新页面重试或检查浏览器控制台");
-                }
-            }, 500);
-            return;
+        if (textarea) {
+            textarea.value = text;
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            // 不自动发送，让用户手动按回车或点击发送按钮
+        } else {
+            alert("找不到聊天输入框，请刷新页面重试");
         }
-        fillAndSend(textarea, text);
-    }
-
-    function fillAndSend(textarea, text) {
-        textarea.value = text;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        // 模拟完整键盘事件
-        ['keydown', 'keypress', 'keyup'].forEach(eventType => {
-            const event = new KeyboardEvent(eventType, {
-                key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
-                bubbles: true, cancelable: true
-            });
-            textarea.dispatchEvent(event);
-        });
-        // 额外触发 change
-        textarea.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     if (SpeechRecognition) {
@@ -73,7 +49,7 @@ def voice_toggle():
 
         recognition.onresult = (e) => {
             const text = e.results[0][0].transcript;
-            setChatInputAndSend(text);
+            fillChatInput(text);
             toggleUI(false);
         };
         recognition.onerror = (e) => {
@@ -103,5 +79,4 @@ def voice_toggle():
     }
     </script>
     """
-    components.html(voice_html, height=50, sandbox="allow-same-origin allow-scripts")
-
+    components.html(voice_html, height=50)
