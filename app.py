@@ -85,3 +85,5 @@ if st.sidebar.button("生成哲学思维报告"):
             with st.spinner("专家正在分析中..."):
                 report = evaluator.get_report(client, st.session_state.messages)
                 st.markdown(report)
+
+extensions.show_chat_export_ui()
