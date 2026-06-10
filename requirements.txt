@@ -1,3 +1,10 @@
+# 核心依赖
 streamlit
 openai
-streamlit-chat-widget
+
+# 语音识别所需库
+streamlit-chat-widget==0.1.15
+SpeechRecognition==3.10.4
+
+# ⚠️ 关键依赖：PyAudio（用于处理麦克风输入）
+PyAudio==0.2.14
