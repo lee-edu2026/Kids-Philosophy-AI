@@ -57,7 +57,7 @@ for message in st.session_state.messages:
 # --- 4. 互动逻辑 ---
 col1, col2 = st.columns([1, 12])
 with col1:
-    pass
+    extensions.voice_toggle()
 with col2:
     prompt = st.chat_input("在这里输入你的想法...")
 
