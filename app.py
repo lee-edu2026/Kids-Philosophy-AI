@@ -3,7 +3,7 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
-import child_philosophy_extensions as extensions
+import extensions
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
