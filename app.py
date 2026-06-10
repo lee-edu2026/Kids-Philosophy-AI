@@ -123,8 +123,7 @@ if user_message:
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
     
-    # 发送消息后强制滚动到底部，避免新消息被固定栏遮挡
-    st.rerun()
+    
 
 # --- 5. 评分报告 ---
 st.sidebar.markdown("---")
