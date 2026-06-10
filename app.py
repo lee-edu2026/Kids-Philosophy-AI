@@ -55,7 +55,14 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- 4. 互动逻辑 ---
-if prompt := st.chat_input("在这里输入你的想法..."):
+
+col1, col2 = st.columns([1, 12])
+with col1:
+    extensions.show_voice_toggle()  # 语音/键盘切换按钮
+with col2:
+    prompt = st.chat_input("在这里输入你的想法...")
+
+if prompt :
     # 展示孩子的话
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
