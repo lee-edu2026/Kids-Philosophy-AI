@@ -3,9 +3,6 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
-from streamlit_mic_recorder import mic_recorder
-import speech_recognition as sr
-import io
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
@@ -57,44 +54,25 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- 4. 互动逻辑（语音+文本） ---
-from streamlit_mic_recorder import mic_recorder
-import speech_recognition as sr
-import io
+prompt = st.chat_input("在这里输入你的想法...", accept_audio=True)
 
-def transcribe_audio(audio_bytes):
-    recognizer = sr.Recognizer()
-    try:
-        with io.BytesIO(audio_bytes) as source:
-            with sr.AudioFile(source) as source_file:
-                audio_data = recognizer.record(source_file)
-                text = recognizer.recognize_google(audio_data, language='zh-CN')
-                return text
-    except sr.UnknownValueError:
-        st.warning("抱歉，无法识别这段语音。请再说一遍。")
-        return None
-    except sr.RequestError:
-        st.warning("语音服务连接失败，请稍后重试。")
-        return None
+# 处理用户的输入（无论是打字还是语音）
+if prompt:
+    # 核心改动点：prompt 可能是一个包含 'text' 或 'audio' 的对象
+    if hasattr(prompt, 'text'):
+        # 处理语音输入：官方组件会自动完成语音识别并存入 .text 属性
+        user_message = prompt.text
+    else:
+        # 处理文本输入
+        user_message = prompt
 
-# 录音按钮
-audio = mic_recorder(
-    start_prompt="🎙️ 开始录音",
-    stop_prompt="⏹️ 停止录音",
-    just_once=True,
-    use_container_width=False,
-    format=None
-)
-
-if audio and 'bytes' in audio:
-    with st.chat_message("user"):
-        st.markdown("🎙️ *(正在处理您的语音...)*")
-    user_message = transcribe_audio(audio['bytes'])
     if user_message:
-        # 显示用户消息
+        # 将用户消息保存到会话历史并显示出来
+        st.session_state.messages.append({"role": "user", "content": user_message})
         with st.chat_message("user"):
             st.markdown(user_message)
-        st.session_state.messages.append({"role": "user", "content": user_message})
-        # AI 回复
+
+        # ---- 调用 DeepSeek API 生成回复（你的代码保持不变）----
         with st.chat_message("assistant"):
             response = client.chat.completions.create(
                 model="deepseek-chat",
@@ -106,27 +84,7 @@ if audio and 'bytes' in audio:
             )
             answer = response.choices[0].message.content
             st.markdown(answer)
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-        st.rerun()
-
-# 文本输入框（保留）
-prompt = st.chat_input("或者在这里输入你的想法...")
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    with st.chat_message("assistant"):
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system", "content": current_system_prompt},
-                *st.session_state.messages
-            ],
-            stream=False
-        )
-        answer = response.choices[0].message.content
-        st.markdown(answer)
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.session_state.messages.append({"role": "assistant", "content": answer})
             
 # --- 5. 评分报告 ---
 st.sidebar.markdown("---")
