@@ -57,20 +57,13 @@ for message in st.session_state.messages:
 prompt = st.chat_input("在这里输入你的想法...", accept_audio=True)
 
 if prompt:
-    # 处理普通文本输入
-    if isinstance(prompt, str):
-        prompt_text = prompt
-    # 处理语音输入（语音识别后会自动转为文本，所以这里只需普通处理即可）
-    else:
-        prompt_text = str(prompt)
-
-    if prompt_text:
+    prompt_text = prompt.text   # 关键改动
+    if prompt_text.strip():
         st.session_state.messages.append({"role": "user", "content": prompt_text})
         with st.chat_message("user"):
             st.markdown(prompt_text)
 
         with st.chat_message("assistant"):
-            # 调用 AI 的代码保持不变
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
