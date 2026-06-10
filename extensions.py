@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-def show_voice_toggle():
+def show_voice_input_toggle():  # 👈 这里改了函数名
     """聊天输入框旁的语音/键盘切换按钮，识别后自动发送"""
     # 嵌入带切换效果的语音按钮，和输入框无缝衔接
     voice_html = """
