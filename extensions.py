@@ -2,9 +2,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 def show_voice_input_for_chat():
-    # 用侧边栏放语音按钮，不影响主界面排版
     st.sidebar.markdown("---")
-    st.sidebar.subheader("🎤 语音输入切换")
+    st.sidebar.subheader("🎤 语音输入（识别后自动发送）")
 
     voice_html = """
     <div style="margin: 10px 0;">
@@ -35,12 +34,21 @@ def show_voice_input_for_chat():
 
         recognition.onresult = (e) => {
             const text = e.results[0][0].transcript;
-            status.innerText = "✅ 识别完成：" + text;
-            // 直接把结果填入页面底部的聊天输入框
+            status.innerText = "✅ 识别完成并已发送：" + text;
             const chatInput = document.querySelector('textarea[data-testid="stChatInputTextArea"]');
             if (chatInput) {
                 chatInput.value = text;
                 chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                // 模拟按下回车键，自动提交消息
+                const enterEvent = new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    keyCode: 13,
+                    which: 13,
+                    bubbles: true,
+                    cancelable: true
+                });
+                chatInput.dispatchEvent(enterEvent);
             }
             btn.disabled = false;
         };
