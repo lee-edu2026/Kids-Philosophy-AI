@@ -58,7 +58,7 @@ prompt = st.chat_input("在这里输入你的想法...", accept_audio=True)
 
 # 处理用户的输入（无论是打字还是语音）
 if prompt:
-    try:
+try:
     user_message = prompt.text
 except AttributeError:
     user_message = str(prompt)
