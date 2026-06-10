@@ -19,27 +19,50 @@ def voice_toggle():
     }
 
     function setChatInputAndSend(text) {
-        // 方式1：查找 Streamlit chat input 的真实 textarea
-        let textarea = document.querySelector('div[data-testid="stChatInput"] textarea');
-        if (!textarea) {
-            // 兼容旧版
-            textarea = document.querySelector('textarea[data-testid="stChatInputTextArea"]');
+        // 多种选择器尝试
+        const selectors = [
+            'div[data-testid="stChatInput"] textarea',
+            'textarea[data-testid="stChatInputTextArea"]',
+            'div[data-testid="stChatInput"] input',
+            '.stChatInput textarea'
+        ];
+        let textarea = null;
+        for (let sel of selectors) {
+            textarea = document.querySelector(sel);
+            if (textarea) break;
         }
-        if (textarea) {
-            textarea.value = text;
-            // 触发 input 事件让 Streamlit 感知变化
-            textarea.dispatchEvent(new Event('input', { bubbles: true }));
-            // 模拟回车提交
-            const enterEvent = new KeyboardEvent('keydown', {
-                key: 'Enter', code: 'Enter', keyCode: 13,
+        
+        if (!textarea) {
+            // 增加重试：等待0.5秒后再查一次
+            setTimeout(() => {
+                for (let sel of selectors) {
+                    textarea = document.querySelector(sel);
+                    if (textarea) break;
+                }
+                if (textarea) {
+                    fillAndSend(textarea, text);
+                } else {
+                    alert("找不到聊天输入框，请刷新页面重试或检查浏览器控制台");
+                }
+            }, 500);
+            return;
+        }
+        fillAndSend(textarea, text);
+    }
+
+    function fillAndSend(textarea, text) {
+        textarea.value = text;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        // 模拟完整键盘事件
+        ['keydown', 'keypress', 'keyup'].forEach(eventType => {
+            const event = new KeyboardEvent(eventType, {
+                key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
                 bubbles: true, cancelable: true
             });
-            textarea.dispatchEvent(enterEvent);
-            // 额外触发 keyup 确保发送
-            textarea.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
-        } else {
-            alert("找不到聊天输入框，请刷新页面重试");
-        }
+            textarea.dispatchEvent(event);
+        });
+        // 额外触发 change
+        textarea.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     if (SpeechRecognition) {
