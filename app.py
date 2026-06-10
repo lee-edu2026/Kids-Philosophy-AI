@@ -3,7 +3,6 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
-from streamlit_chat_widget import chat_input_widget
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
@@ -55,19 +54,23 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- 4. 互动逻辑 ---
-user_input = chat_input_widget()
+prompt = st.chat_input("在这里输入你的想法...", accept_audio=True)
 
-if user_input:
-    # 无论是打字还是语音，组件都会返回包含 "text" 字段的字典
-    prompt = user_input.get("text", "").strip()
-    
-    if prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
+if prompt:
+    # 处理普通文本输入
+    if isinstance(prompt, str):
+        prompt_text = prompt
+    # 处理语音输入（语音识别后会自动转为文本，所以这里只需普通处理即可）
+    else:
+        prompt_text = str(prompt)
+
+    if prompt_text:
+        st.session_state.messages.append({"role": "user", "content": prompt_text})
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.markdown(prompt_text)
 
-        # 调用 AI 回复（你的原有代码）
         with st.chat_message("assistant"):
+            # 调用 AI 的代码保持不变
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
