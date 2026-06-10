@@ -13,7 +13,6 @@ client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 st.set_page_config(page_title="小小思想家 AI 课堂", layout="wide")
 st.title("🌟 小小思想家：儿童哲学 AI 课堂")
 
-# 侧边栏配置 (保持不变)
 st.sidebar.header("课程配置")
 theme_names = list(questions.QUESTION_BANK.keys())
 selected_theme = st.sidebar.selectbox("第一步：选择今日探讨主题", theme_names)
@@ -43,28 +42,43 @@ if st.sidebar.button("清空所有聊天"):
     st.session_state.messages = []
     st.rerun()
 
-# 添加CSS，为消息区域预留底部内边距，防止被固定栏遮挡
+# --- 3. 对话展示区 ---
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# --- 4. 互动逻辑（语音+文本） ---
+# 添加 CSS：固定底部容器，并为消息区增加底部 padding
 st.markdown(
     """
     <style>
-    /* 调整主内容区底部内边距，为工具栏留出空间 */
+    .fixed-bottom-input {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--secondary-background-color);
+        padding: 0.5rem 1rem 0.8rem 1rem;
+        z-index: 1000;
+        width: 100%;
+        border-top: 1px solid rgba(128, 128, 128, 0.2);
+    }
+    /* 防止固定栏遮盖最后一条消息 */
     .main .block-container {
-        padding-bottom: 150px !important;
+        padding-bottom: 120px !important;
+    }
+    .stChatInput {
+        background-color: transparent !important;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# --- 3. 对话展示区 (保持不变)---
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# --- 4. 使用官方 st.bottom 容器修复底部固定问题 ---
-# 使用官方 st.bottom 容器，确保输入区域始终固定在页面底部
-with st.bottom():
-    # 语音按钮 (来自 streamlit_mic_recorder)
+# 固定底部容器：语音按钮在上，文字输入框在下
+with st.container():
+    st.markdown('<div class="fixed-bottom-input">', unsafe_allow_html=True)
+    
     user_input_from_mic = speech_to_text(
         language='zh-CN',
         start_prompt="🎙️ 录音",
@@ -73,11 +87,12 @@ with st.bottom():
         use_container_width=True,
         key="mic_recorder"
     )
-
-    # 聊天输入框 (streamlit 原生)
+    
     user_input_from_text = st.chat_input("在这里输入你的想法...")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# 统一处理输入 (逻辑保持不变)
+# 统一处理输入（语音优先）
 if user_input_from_mic and user_input_from_mic.strip():
     user_message = user_input_from_mic.strip()
 elif user_input_from_text and user_input_from_text.strip():
@@ -89,7 +104,7 @@ if user_message:
     st.session_state.messages.append({"role": "user", "content": user_message})
     with st.chat_message("user"):
         st.markdown(user_message)
-
+    
     with st.chat_message("assistant"):
         response = client.chat.completions.create(
             model="deepseek-chat",
@@ -102,10 +117,8 @@ if user_message:
         answer = response.choices[0].message.content
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-        # 在生成回答后让页面滚动到底部，以获得流畅的聊天体验
-        st.rerun()
 
-# --- 5. 评分报告 (保持不变)---
+# --- 5. 评分报告 ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("第三步：结课评估")
 if st.sidebar.button("生成哲学思维报告"):
