@@ -63,8 +63,6 @@ if prompt:
     except AttributeError:
         user_message = str(prompt)
 
-st.info(f"原始 prompt 类型: {type(prompt)} | 内容: {prompt} | 提取的文本: {user_message}")
-
     if user_message:
         # 将用户消息保存到会话历史并显示出来
         st.session_state.messages.append({"role": "user", "content": user_message})
