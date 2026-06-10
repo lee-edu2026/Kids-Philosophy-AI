@@ -58,13 +58,7 @@ prompt = st.chat_input("在这里输入你的想法...", accept_audio=True)
 
 # 处理用户的输入（无论是打字还是语音）
 if prompt:
-    # 核心改动点：prompt 可能是一个包含 'text' 或 'audio' 的对象
-    if hasattr(prompt, 'text'):
-        # 处理语音输入：官方组件会自动完成语音识别并存入 .text 属性
-        user_message = prompt.text
-    else:
-        # 处理文本输入
-        user_message = prompt
+    user_message = prompt.get('text') if isinstance(prompt, dict) else prompt
 
     if user_message:
         # 将用户消息保存到会话历史并显示出来
