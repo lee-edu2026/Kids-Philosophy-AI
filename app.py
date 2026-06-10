@@ -60,7 +60,7 @@ prompt = st.chat_input("在这里输入你的想法...", accept_audio=True)
 if prompt:
     try:
     user_message = prompt.text
-    except AttributeError:
+except AttributeError:
     user_message = str(prompt)
 
     if user_message:
