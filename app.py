@@ -3,7 +3,7 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
-from st_mic_recorder import st_mic_recorder
+from streamlit_mic_recorder import speech_to_text
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
