@@ -3,7 +3,7 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
-from voice_widget import voice_input_button
+from st_mic_recorder import st_mic_recorder
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
@@ -55,32 +55,26 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- 4. 互动逻辑（语音+文本） ---
-# 创建两列布局：左侧放语音按钮，右侧放文本输入框
-col1, col2 = st.columns([1, 10])  # 调整比例让文字输入框占大部分空间
-
+col1, col2 = st.columns([1, 10])
 with col1:
-    # 调用刚刚定义的语音识别组件，给它一个唯一的key
-    voice_text = voice_input_button(key="main_voice")
+    # 录音按钮，返回识别后的文本
+    voice_text = st_mic_recorder(key="mic_recorder", language="zh-CN")
+with col2:
+    text_input = st.chat_input("在这里输入你的想法...")
 
-# 语音识别返回的文本优先处理
+# 统一处理输入
 user_message = None
 if voice_text and voice_text.strip():
     user_message = voice_text.strip()
+elif text_input and text_input.strip():
+    user_message = text_input.strip()
 
-with col2:
-    # 同时保留文字输入框
-    text_input = st.chat_input("在这里输入你的想法...")
-    if text_input and text_input.strip():
-        user_message = text_input.strip()
-
-# 最终，无论是语音识别还是文字输入，统一由 user_message 变量处理后续逻辑
 if user_message:
-    # 将用户消息保存到会话历史并显示出来
+    # 原有展示和调用 API 的逻辑保持不变
     st.session_state.messages.append({"role": "user", "content": user_message})
     with st.chat_message("user"):
         st.markdown(user_message)
-
-    # ---- 调用 DeepSeek API 生成回复 ----
+    
     with st.chat_message("assistant"):
         response = client.chat.completions.create(
             model="deepseek-chat",
@@ -93,7 +87,6 @@ if user_message:
         answer = response.choices[0].message.content
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-
             
 # --- 5. 评分报告 ---
 st.sidebar.markdown("---")
