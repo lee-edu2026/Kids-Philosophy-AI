@@ -3,7 +3,7 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
-import extensions
+from streamlit_chat_widget import chat_input_widget
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
@@ -54,30 +54,45 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 4. 互动逻辑 ---
-col1, col2 = st.columns([1, 12])
-with col1:
-    extensions.voice_toggle()
-with col2:
-    prompt = st.chat_input("在这里输入你的想法...")
+# --- 4. 互动逻辑（修改后）---
+# 使用新的多功能聊天输入框组件
+user_input = chat_input_widget()
 
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+# 检查用户是通过文本还是语音发送的消息
+if user_input:
+    # 判断消息类型：如果是文本
+    if "text" in user_input:
+        prompt = user_input["text"]
+    # 如果是语音，则取出录音数据（可选，也可以只使用其文本转录）
+    elif "audioFile" in user_input:
+        # 你可以选择处理音频或忽略，这里简单取出文本供使用
+        # 注意：该组件返回的字典可能不直接包含转录的文本，我们可能暂不处理
+        # 为简单起见，后续可以只处理文本输入
+        pass
 
-    with st.chat_message("assistant"):
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system", "content": current_system_prompt},
-                *st.session_state.messages
-            ],
-            stream=False
-        )
-        answer = response.choices[0].message.content
-        st.markdown(answer)
-        st.session_state.messages.append({"role": "assistant", "content": answer})
+    # 只有当我们拿到有效的文本 prompt 时才处理
+    if 'prompt' in locals() and prompt:
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # ... （调用 AI 的代码保持不变） ...
+        with st.chat_message("assistant"):
+            # 这里的 client 和 current_system_prompt 是在前面定义的
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": current_system_prompt},
+                    *st.session_state.messages
+                ],
+                stream=False
+            )
+            answer = response.choices[0].message.content
+            st.markdown(answer)
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+
+# 刷新 prompt 变量，避免下次循环错误地使用
+prompt = None
 
 # --- 5. 评分报告 ---
 st.sidebar.markdown("---")
