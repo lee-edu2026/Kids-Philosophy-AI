@@ -91,4 +91,3 @@ if st.sidebar.button("生成哲学思维报告"):
                 report = evaluator.get_report(client, st.session_state.messages)
                 st.markdown(report)
 
-extensions.show_voice_input_for_chat()
