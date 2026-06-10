@@ -55,23 +55,17 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- 4. 互动逻辑（语音+文本） ---
-# --- 语音输入部分 ---
-col1, col2 = st.columns([1, 10])
-with col1:
-    # 直接调用 speech_to_text 函数
-    # 它会在界面上生成一个按钮，点击开始/停止录音
-    # 识别到的文字会通过函数的返回值传回
-    user_input_from_mic = speech_to_text(
-        language='zh-CN',          # 设为中文
-        start_prompt="🎙️ 录音",    # 按钮在未录音时的文字
-        stop_prompt="⏹️ 停止",      # 按钮在录音中的文字
-        just_once=True,            # 确保每次录音只返回一次结果
-        use_container_width=True,  # 让按钮宽度自适应
-        key="mic_recorder"         # 组件的唯一标识
-    )
-    
-with col2:
-    user_input_from_text = st.chat_input("在这里输入你的想法...")
+# --- 语音输入部分（不再使用分栏）---
+user_input_from_mic = speech_to_text(
+    language='zh-CN',
+    start_prompt="🎙️ 录音",
+    stop_prompt="⏹️ 停止",
+    just_once=True,
+    use_container_width=True,
+    key="mic_recorder"
+)
+
+user_input_from_text = st.chat_input("在这里输入你的想法...")
 
 # 统一处理输入（语音优先）
 if user_input_from_mic and user_input_from_mic.strip():
@@ -82,7 +76,6 @@ else:
     user_message = None
 
 if user_message:
-    # 原有展示和调用 API 的逻辑保持不变
     st.session_state.messages.append({"role": "user", "content": user_message})
     with st.chat_message("user"):
         st.markdown(user_message)
