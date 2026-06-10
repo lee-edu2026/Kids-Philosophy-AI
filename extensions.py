@@ -103,5 +103,5 @@ def voice_toggle():
     }
     </script>
     """
-    components.html(voice_html, height=50)
+    components.html(voice_html, height=50, sandbox="allow-same-origin allow-scripts")
 
