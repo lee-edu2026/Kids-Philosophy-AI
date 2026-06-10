@@ -3,6 +3,7 @@ from openai import OpenAI
 import prompts
 import questions
 import evaluator
+import extensions 
 
 # --- 1. 基础配置 ---
 # 从 Streamlit 后台安全读取 Key
