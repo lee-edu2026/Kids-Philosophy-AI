@@ -6,6 +6,7 @@ import evaluator
 from streamlit_mic_recorder import speech_to_text
 
 # --- 1. 基础配置 ---
+# 从 Streamlit 后台安全读取 Key
 api_key = st.secrets["DEEPSEEK_API_KEY"]
 client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 
@@ -13,10 +14,12 @@ client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 st.set_page_config(page_title="小小思想家 AI 课堂", layout="wide")
 st.title("🌟 小小思想家：儿童哲学 AI 课堂")
 
+# 侧边栏：配置区
 st.sidebar.header("课程配置")
 theme_names = list(questions.QUESTION_BANK.keys())
 selected_theme = st.sidebar.selectbox("第一步：选择今日探讨主题", theme_names)
 
+# 获取当前主题对应的提示词和问题列表
 current_system_prompt = {
     "自我与他人": prompts.TASK_1,
     "真善美": prompts.TASK_2,
@@ -24,15 +27,19 @@ current_system_prompt = {
     "生命与自然": prompts.TASK_4
 }[selected_theme]
 
+# 侧边栏：问题选择
 st.sidebar.markdown("---")
 st.sidebar.subheader("第二步：由 AI 发起提问")
 selected_q = st.sidebar.selectbox("从课本中挑选一个原问题：", ["请选择一个问题..."] + questions.QUESTION_BANK[selected_theme])
 
+# 初始化对话记录
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# 按钮：让 AI 自动问出选中的问题
 if st.sidebar.button("开始教学（AI 提问）"):
     if selected_q != "请选择一个问题...":
+        # 清空记录并让 AI 说出选中的原问题
         st.session_state.messages = [{"role": "assistant", "content": selected_q}]
         st.rerun()
     else:
@@ -48,18 +55,21 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- 4. 互动逻辑（语音+文本） ---
-# 语音按钮
-user_input_from_mic = speech_to_text(
-    language='zh-CN',
-    start_prompt="🎙️ 录音",
-    stop_prompt="⏹️ 停止",
-    just_once=True,
-    use_container_width=True,
-    key="mic_recorder"
-)
-
-# 文字输入框（Streamlit 会自动固定在底部）
-user_input_from_text = st.chat_input("在这里输入你的想法...")
+# 使用 st._bottom 容器将输入组件固定在底部（官方未公开但稳定）
+with st._bottom():
+    # 两列布局：语音按钮占窄列，文本输入框占宽列
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        user_input_from_mic = speech_to_text(
+            language='zh-CN',
+            start_prompt="🎙️",
+            stop_prompt="⏹️",
+            just_once=True,
+            use_container_width=True,
+            key="mic_recorder"
+        )
+    with col2:
+        user_input_from_text = st.chat_input("在这里输入你的想法...")
 
 # 统一处理输入（语音优先）
 if user_input_from_mic and user_input_from_mic.strip():
@@ -73,7 +83,7 @@ if user_message:
     st.session_state.messages.append({"role": "user", "content": user_message})
     with st.chat_message("user"):
         st.markdown(user_message)
-    
+
     with st.chat_message("assistant"):
         response = client.chat.completions.create(
             model="deepseek-chat",
