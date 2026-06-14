@@ -47,79 +47,25 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 4. 互动逻辑（语音+文本）—— 完全自定义固定栏 ---
+# --- 4. 互动逻辑（语音+文本） ---
 
-# 先加上修复 transform 的 CSS（这是关键）
-st.markdown(
-    """
-    <style>
-    /* 修复 Streamlit 的 transform 导致 fixed 失效的问题 */
-    .stApp {
-        transform: none !important;
-    }
-    /* 固定底部栏样式 */
-    .fixed-bottom-input {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background-color: var(--secondary-background-color);
-        padding: 0.5rem 1rem 0.8rem 1rem;
-        z-index: 1000;
-        width: 100%;
-        border-top: 1px solid rgba(128, 128, 128, 0.2);
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-    /* 让文本输入框自动撑满剩余宽度 */
-    .fixed-bottom-input .stTextInput {
-        flex: 1;
-        margin-bottom: 0;
-    }
-    /* 给聊天记录底部留出空间 */
-    .main .block-container {
-        padding-bottom: 100px !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
+# 在侧边栏添加语音输入
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎙️ 语音输入（点击录音）")
+
+mic_text = speech_to_text(
+    language='zh-CN',
+    start_prompt="🎙️ 开始录音",
+    stop_prompt="⏹️ 停止",
+    just_once=True,
+    use_container_width=True,
+    key="mic_recorder_sidebar"
 )
 
-# 这里不再用 st.chat_input，改用普通文本输入框
-# 先用一个容器占位，让固定栏出现在最后
-with st.container():
-    st.markdown('<div class="fixed-bottom-input">', unsafe_allow_html=True)
-    
-    # 语音按钮（宽度自动）
-    user_input_from_mic = speech_to_text(
-        language='zh-CN',
-        start_prompt="🎙️",
-        stop_prompt="⏹️",
-        just_once=True,
-        use_container_width=False,
-        key="mic_recorder"
-    )
-    
-    # 文本输入框（用 st.text_input 模拟聊天输入）
-    user_input_from_text = st.text_input(
-        "在这里输入你的想法...",
-        value=st.session_state.get("text_input", ""),
-        key="text_input",
-        label_visibility="collapsed",
-        placeholder="按回车发送..."
-    )
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# 处理输入（语音优先）
-user_message = None
-if user_input_from_mic and user_input_from_mic.strip():
-    user_message = user_input_from_mic.strip()
-elif user_input_from_text and user_input_from_text.strip():
-    user_message = user_input_from_text.strip()
-
-if user_message:
+# 处理语音输入（如果有）
+if mic_text and mic_text.strip():
+    user_message = mic_text.strip()
+    # 将语音消息加入对话
     st.session_state.messages.append({"role": "user", "content": user_message})
     with st.chat_message("user"):
         st.markdown(user_message)
@@ -136,6 +82,32 @@ if user_message:
         answer = response.choices[0].message.content
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+    
+    # 刷新页面，让新消息显示出来，同时清空语音输入状态
+    st.rerun()
+
+# 底部文本输入框（原生固定）
+user_text = st.chat_input("在这里输入你的想法...")
+
+if user_text and user_text.strip():
+    st.session_state.messages.append({"role": "user", "content": user_text})
+    with st.chat_message("user"):
+        st.markdown(user_text)
+    
+    with st.chat_message("assistant"):
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": current_system_prompt},
+                *st.session_state.messages
+            ],
+            stream=False
+        )
+        answer = response.choices[0].message.content
+        st.markdown(answer)
+        st.session_state.messages.append({"role": "assistant", "content": answer})
+    
+    st.rerun()
     
     
 # --- 5. 评分报告 ---
