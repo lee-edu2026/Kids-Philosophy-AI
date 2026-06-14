@@ -54,8 +54,8 @@ col1, col2 = st.columns([6, 1])
 with col2:
     user_input_from_mic = speech_to_text(
         language='zh-CN',
-        start_prompt="🎙️",
-        stop_prompt="⏹️",
+        start_prompt="🎙️语音输入",
+        stop_prompt="⏹️停止说话",
         just_once=True,
         use_container_width=True,
         key="mic_recorder"
