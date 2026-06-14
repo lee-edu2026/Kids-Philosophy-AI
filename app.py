@@ -137,10 +137,7 @@ if user_message:
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
     
-    # 清空文本输入框（通过 session state 标记）
-    st.session_state["text_input"] = ""
-    # 简单办法：用 st.rerun() 让页面刷新，输入框会被清空
-    st.rerun()
+    
 # --- 5. 评分报告 ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("第三步：结课评估")
