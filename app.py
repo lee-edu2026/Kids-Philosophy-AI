@@ -49,48 +49,32 @@ for message in st.session_state.messages:
 
 # --- 4. 互动逻辑（语音+文本） ---
 
-# 在侧边栏添加语音输入
-st.sidebar.markdown("---")
-st.sidebar.subheader("🎙️ 语音输入（点击录音）")
+# 固定底部容器：语音按钮在上，文字输入框在下
+col1, col2 = st.columns([6, 1])
+with col2:
+    user_input_from_mic = speech_to_text(
+        language='zh-CN',
+        start_prompt="🎙️语音输入",
+        stop_prompt="⏹️停止说话",
+        just_once=True,
+        use_container_width=True,
+        key="mic_recorder"
+    )
 
-mic_text = speech_to_text(
-    language='zh-CN',
-    start_prompt="🎙️ 开始录音",
-    stop_prompt="⏹️ 停止",
-    just_once=True,
-    use_container_width=True,
-    key="mic_recorder_sidebar"
-)
+# 文本输入框（这个会自动固定在底部）
+user_input_from_text = st.chat_input("在这里输入你的想法...")
 
-# 处理语音输入（如果有）
-if mic_text and mic_text.strip():
-    user_message = mic_text.strip()
-    # 将语音消息加入对话
+# 处理输入（语音优先）
+user_message = None
+if user_input_from_mic and user_input_from_mic.strip():
+    user_message = user_input_from_mic.strip()
+elif user_input_from_text and user_input_from_text.strip():
+    user_message = user_input_from_text.strip()
+
+if user_message:
     st.session_state.messages.append({"role": "user", "content": user_message})
     with st.chat_message("user"):
         st.markdown(user_message)
-    
-    with st.chat_message("assistant"):
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system", "content": current_system_prompt},
-                *st.session_state.messages
-            ],
-            stream=False
-        )
-        answer = response.choices[0].message.content
-        st.markdown(answer)
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-    
-
-# 底部文本输入框（原生固定）
-user_text = st.chat_input("在这里输入你的想法...")
-
-if user_text and user_text.strip():
-    st.session_state.messages.append({"role": "user", "content": user_text})
-    with st.chat_message("user"):
-        st.markdown(user_text)
     
     with st.chat_message("assistant"):
         response = client.chat.completions.create(
