@@ -47,22 +47,70 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 4. 互动逻辑（语音+文本） ---
+# --- 4. 互动逻辑（语音+文本）—— 完全自定义固定栏 ---
 
-# 固定底部容器：语音按钮在上，文字输入框在下
-col1, col2 = st.columns([6, 1])
-with col2:
+# 先加上修复 transform 的 CSS（这是关键）
+st.markdown(
+    """
+    <style>
+    /* 修复 Streamlit 的 transform 导致 fixed 失效的问题 */
+    .stApp {
+        transform: none !important;
+    }
+    /* 固定底部栏样式 */
+    .fixed-bottom-input {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--secondary-background-color);
+        padding: 0.5rem 1rem 0.8rem 1rem;
+        z-index: 1000;
+        width: 100%;
+        border-top: 1px solid rgba(128, 128, 128, 0.2);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    /* 让文本输入框自动撑满剩余宽度 */
+    .fixed-bottom-input .stTextInput {
+        flex: 1;
+        margin-bottom: 0;
+    }
+    /* 给聊天记录底部留出空间 */
+    .main .block-container {
+        padding-bottom: 100px !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# 这里不再用 st.chat_input，改用普通文本输入框
+# 先用一个容器占位，让固定栏出现在最后
+with st.container():
+    st.markdown('<div class="fixed-bottom-input">', unsafe_allow_html=True)
+    
+    # 语音按钮（宽度自动）
     user_input_from_mic = speech_to_text(
         language='zh-CN',
-        start_prompt="🎙️语音输入",
-        stop_prompt="⏹️停止说话",
+        start_prompt="🎙️",
+        stop_prompt="⏹️",
         just_once=True,
-        use_container_width=True,
+        use_container_width=False,
         key="mic_recorder"
     )
-
-# 文本输入框（这个会自动固定在底部）
-user_input_from_text = st.chat_input("在这里输入你的想法...")
+    
+    # 文本输入框（用 st.text_input 模拟聊天输入）
+    user_input_from_text = st.text_input(
+        "在这里输入你的想法...",
+        value=st.session_state.get("text_input", ""),
+        key="text_input",
+        label_visibility="collapsed",
+        placeholder="按回车发送..."
+    )
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # 处理输入（语音优先）
 user_message = None
@@ -88,7 +136,11 @@ if user_message:
         answer = response.choices[0].message.content
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-
+    
+    # 清空文本输入框（通过 session state 标记）
+    st.session_state["text_input"] = ""
+    # 简单办法：用 st.rerun() 让页面刷新，输入框会被清空
+    st.rerun()
 # --- 5. 评分报告 ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("第三步：结课评估")
