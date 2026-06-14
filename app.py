@@ -83,8 +83,6 @@ if mic_text and mic_text.strip():
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
     
-    # 刷新页面，让新消息显示出来，同时清空语音输入状态
-    st.rerun()
 
 # 底部文本输入框（原生固定）
 user_text = st.chat_input("在这里输入你的想法...")
@@ -107,7 +105,6 @@ if user_text and user_text.strip():
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
     
-    st.rerun()
     
     
 # --- 5. 评分报告 ---
