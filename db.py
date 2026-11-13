@@ -3,28 +3,24 @@ import psycopg2
 import uuid
 import streamlit as st
 
-# ========= 这里已经填好了你截图里的 Aiven 信息 =========
+# 从 Streamlit Secrets 读取数据库配置
 DB_CONFIG = {
-    "host": "pg-1c32e431-project-0000.j.aivencloud.com",
-    "port": 12482,
-    "user": "avnadmin",
-    "password": st.secrets["DB_PASSWORD"],  # ★★★ 如果稍后重置了密码，记得改这里 ★★★
-    "dbname": "defaultdb",                   # Aiven 默认的数据库名
-    "sslmode": "require"                     # Aiven 强制要求使用 SSL 加密连接
+    "host": st.secrets["DB_HOST"],
+    "port": int(st.secrets["DB_PORT"]),
+    "user": st.secrets["DB_USER"],
+    "password": st.secrets["DB_PASSWORD"],
+    "dbname": st.secrets["DB_NAME"],
+    "sslmode": "require"
 }
-
 
 def _connect():
     """打开一个数据库连接（并开启自动提交）"""
-    # psycopg2 默认不是自动提交的，我们要设成自动提交，省去手动 commit 的麻烦
     conn = psycopg2.connect(**DB_CONFIG)
     conn.autocommit = True
     return conn
 
-
 def init_db():
     """建表（已存在就跳过，不会报错）"""
-    # 注意：PostgreSQL 的建表语法和 MySQL 略有不同，比如主键用 SERIAL，文本用 TEXT
     conn = _connect()
     try:
         with conn.cursor() as cur:
@@ -51,7 +47,6 @@ def init_db():
     finally:
         conn.close()
 
-
 def create_session(user_name, theme, start_question):
     """新建一节课，返回这节课的唯一编号"""
     sid = str(uuid.uuid4())
@@ -67,7 +62,6 @@ def create_session(user_name, theme, start_question):
         conn.close()
     return sid
 
-
 def save_message(session_id, role, content):
     """存一条对话（role 是 user 或 assistant）"""
     conn = _connect()
@@ -79,7 +73,6 @@ def save_message(session_id, role, content):
             )
     finally:
         conn.close()
-
 
 def save_report(session_id, report):
     """把评估报告写进这节课，并把状态改为已结束"""
@@ -93,12 +86,13 @@ def save_report(session_id, report):
     finally:
         conn.close()
 
+# ================= 下面是读取历史记录的函数 =================
+
 def get_all_sessions():
     """获取所有历史课程（按时间倒序）"""
     conn = _connect()
     try:
         with conn.cursor() as cur:
-            # to_char 是 PostgreSQL 格式化时间的函数，方便网页展示
             cur.execute("""
                 SELECT session_id, user_name, theme, status, 
                        to_char(created_at, 'YYYY-MM-DD HH24:MI')
@@ -108,7 +102,6 @@ def get_all_sessions():
             return cur.fetchall()
     finally:
         conn.close()
-
 
 def get_messages_by_session(session_id):
     """获取某节课的完整对话"""
@@ -122,7 +115,6 @@ def get_messages_by_session(session_id):
             return cur.fetchall()
     finally:
         conn.close()
-
 
 def get_report_by_session(session_id):
     """获取某节课的报告"""
