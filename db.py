@@ -1,6 +1,7 @@
 # db.py —— 专门负责和 PostgreSQL 打交道
 import psycopg2
 import uuid
+import streamlit as st
 
 # ========= 这里已经填好了你截图里的 Aiven 信息 =========
 DB_CONFIG = {
