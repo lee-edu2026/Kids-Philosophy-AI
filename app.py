@@ -4,16 +4,26 @@ import prompts
 import questions
 import evaluator
 from streamlit_mic_recorder import speech_to_text
+import db
 
 # --- 1. 基础配置 ---
 api_key = st.secrets["DEEPSEEK_API_KEY"]
 client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+
+# --- 数据库初始化（只跑一次，失败也不影响聊天）---
+try:
+    if not st.session_state.get("db_inited"):
+        db.init_db()
+        st.session_state.db_inited = True
+except Exception as e:
+    st.sidebar.warning(f"⚠️ 数据库未连接：{e}（聊天功能不受影响）")
 
 # --- 2. 界面设计 ---
 st.set_page_config(page_title="小小思想家 AI 课堂", layout="wide")
 st.title("🌟 小小思想家：儿童哲学 AI 课堂")
 
 st.sidebar.header("课程配置")
+user_name = st.sidebar.text_input("你的名字：", value="小朋友")
 theme_names = list(questions.QUESTION_BANK.keys())
 selected_theme = st.sidebar.selectbox("第一步：选择今日探讨主题", theme_names)
 
@@ -30,16 +40,26 @@ selected_q = st.sidebar.selectbox("从课本中挑选一个原问题：", ["请�
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "session_id" not in st.session_state:
+    st.session_state.session_id = None
 
 if st.sidebar.button("开始教学（AI 提问）"):
     if selected_q != "请选择一个问题...":
         st.session_state.messages = [{"role": "assistant", "content": selected_q}]
+        # ---- 存数据库：新建一节课 + 存下第一句 AI 提问 ----
+        try:
+            sid = db.create_session(user_name, selected_theme, selected_q)
+            db.save_message(sid, "assistant", selected_q)
+            st.session_state.session_id = sid
+        except Exception as e:
+            st.sidebar.warning(f"⚠️ 保存失败：{e}")
         st.rerun()
     else:
         st.sidebar.warning("请先选一个问题呀！")
 
-if st.sidebar.button("清空所有聊天"):
+if st.sidebar.button("清空所有聊天（开启新话题）"):
     st.session_state.messages = []
+    st.session_state.session_id = None   # 只清内存，数据库旧记录保留
     st.rerun()
 
 # --- 3. 对话展示区 ---
@@ -88,6 +108,13 @@ if user_message:
         answer = response.choices[0].message.content
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+                # ---- 存数据库：用户这条 + AI 这条 ----
+        try:
+            if st.session_state.session_id:
+                db.save_message(st.session_state.session_id, "user", user_message)
+                db.save_message(st.session_state.session_id, "assistant", answer)
+        except Exception as e:
+            st.warning(f"⚠️ 对话保存失败：{e}")
     
     
     
@@ -102,3 +129,9 @@ if st.sidebar.button("生成哲学思维报告"):
             with st.spinner("专家正在分析中..."):
                 report = evaluator.get_report(client, st.session_state.messages)
                 st.markdown(report)
+                                # ---- 存数据库：报告写进这节课，状态改为已结束 ----
+                try:
+                    if st.session_state.session_id:
+                        db.save_report(st.session_state.session_id, report)
+                except Exception as e:
+                    st.warning(f"⚠️ 报告保存失败：{e}")
