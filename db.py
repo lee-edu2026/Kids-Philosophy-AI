@@ -92,3 +92,45 @@ def save_report(session_id, report):
             )
     finally:
         conn.close()
+
+def get_all_sessions():
+    """获取所有历史课程（按时间倒序）"""
+    conn = _connect()
+    try:
+        with conn.cursor() as cur:
+            # to_char 是 PostgreSQL 格式化时间的函数，方便网页展示
+            cur.execute("""
+                SELECT session_id, user_name, theme, status, 
+                       to_char(created_at, 'YYYY-MM-DD HH24:MI')
+                FROM sessions 
+                ORDER BY created_at DESC
+            """)
+            return cur.fetchall()
+    finally:
+        conn.close()
+
+
+def get_messages_by_session(session_id):
+    """获取某节课的完整对话"""
+    conn = _connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT role, content FROM messages 
+                WHERE session_id = %s ORDER BY id ASC
+            """, (session_id,))
+            return cur.fetchall()
+    finally:
+        conn.close()
+
+
+def get_report_by_session(session_id):
+    """获取某节课的报告"""
+    conn = _connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT report FROM sessions WHERE session_id = %s", (session_id,))
+            row = cur.fetchone()
+            return row[0] if row else None
+    finally:
+        conn.close()
