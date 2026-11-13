@@ -8,7 +8,7 @@ DB_CONFIG = {
     "host": "pg-1c32e431-project-0000.j.aivencloud.com",
     "port": 12482,
     "user": "avnadmin",
-    "password": "AVNS_WUvGFtzY9bvjCj68FQW",  # ★★★ 如果稍后重置了密码，记得改这里 ★★★
+    "password": st.secrets["DB_PASSWORD"],  # ★★★ 如果稍后重置了密码，记得改这里 ★★★
     "dbname": "defaultdb",                   # Aiven 默认的数据库名
     "sslmode": "require"                     # Aiven 强制要求使用 SSL 加密连接
 }
